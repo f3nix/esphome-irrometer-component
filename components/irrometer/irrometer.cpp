@@ -149,10 +149,22 @@ void Irrometer::step_finalize_sensor() {
 
     this->r1_resistance_ = (this->r1_resistance_a_ + this->r1_resistance_b_) / 2.0;
 
-    // Publish raw resistances
-    if (this->resistance_a_sensors[i] != nullptr) this->resistance_a_sensors[i]->publish_state(this->r1_resistance_a_);
-    if (this->resistance_b_sensors[i] != nullptr) this->resistance_b_sensors[i]->publish_state(this->r1_resistance_b_);
-    if (this->resistance_sensors[i] != nullptr) this->resistance_sensors[i]->publish_state(this->r1_resistance_);
+    const float eps = 0.001f;
+    bool invalid_resistance = (sen_v_10k_1_ <= eps) ||
+                              ((supply_v_ - sen_v_10k_2_) <= eps) ||
+                              !std::isfinite(this->r1_resistance_a_) ||
+                              !std::isfinite(this->r1_resistance_b_) ||
+                              !std::isfinite(this->r1_resistance_);;
+    if (invalid_resistance) {
+        if (this->resistance_a_sensors[i] != nullptr) this->resistance_a_sensors[i]->publish_state(NAN);
+        if (this->resistance_b_sensors[i] != nullptr) this->resistance_b_sensors[i]->publish_state(NAN);
+        if (this->resistance_sensors[i] != nullptr) this->resistance_sensors[i]->publish_state(NAN);
+    } else {
+        // Publish raw resistances
+        if (this->resistance_a_sensors[i] != nullptr) this->resistance_a_sensors[i]->publish_state(this->r1_resistance_a_);
+        if (this->resistance_b_sensors[i] != nullptr) this->resistance_b_sensors[i]->publish_state(this->r1_resistance_b_);
+        if (this->resistance_sensors[i] != nullptr) this->resistance_sensors[i]->publish_state(this->r1_resistance_);
+    }
 
     // Publish Temp or Tension
     if (i % 2 == 0) {
